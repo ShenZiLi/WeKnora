@@ -105,6 +105,12 @@ Section
     File /oname=.env "..\..\..\..\..\.env.lite.example"
     SetOutPath "$INSTDIR\migrations"
     File /r "..\..\..\..\..\migrations\sqlite"
+
+    ; jieba dictionaries for the bundled Chinese tokenizer. gojieba resolves its
+    ; default dictionary from a compile-time source path that does not exist on
+    ; the target machine, so the dictionaries must ship next to the executable.
+    SetOutPath "$INSTDIR\dict"
+    File /r "..\..\..\..\..\desktop-dict\*"
     SetOutPath $INSTDIR
 
     CreateShortcut "$SMPROGRAMS\${INFO_PRODUCTNAME}.lnk" "$INSTDIR\${PRODUCT_EXECUTABLE}"
