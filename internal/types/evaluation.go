@@ -15,6 +15,9 @@ var Jieba *gojieba.Jieba = newJieba()
 func newJieba() *gojieba.Jieba {
 	dictDir := os.Getenv("JIEBA_DICT_DIR")
 	if dictDir == "" {
+		dictDir = bundledJiebaDictDir()
+	}
+	if dictDir == "" {
 		return gojieba.NewJieba()
 	}
 
@@ -25,6 +28,38 @@ func newJieba() *gojieba.Jieba {
 		filepath.Join(dictDir, "idf.utf8"),
 		filepath.Join(dictDir, "stop_words.utf8"),
 	)
+}
+
+// bundledJiebaDictDir returns the directory that holds the jieba dictionary
+// shipped with a packaged build, or an empty string when none is found.
+//
+// gojieba derives its default dictionary location from the source path recorded
+// at compile time (runtime.Caller), which only exists on the build machine.
+// Native desktop/portable packages therefore ship the dictionaries next to the
+// executable and rely on this lookup. An explicit JIEBA_DICT_DIR still takes
+// precedence; returning "" keeps gojieba's default behaviour for `go run` and
+// other development flows.
+func bundledJiebaDictDir() string {
+	var candidates []string
+	if exe, err := os.Executable(); err == nil {
+		exeDir := filepath.Dir(exe)
+		candidates = append(candidates,
+			filepath.Join(exeDir, "dict"),
+			filepath.Join(exeDir, "..", "Resources", "dict"),
+		)
+	}
+	if wd, err := os.Getwd(); err == nil {
+		candidates = append(candidates,
+			filepath.Join(wd, "dict"),
+			filepath.Join(wd, "web", "dict"),
+		)
+	}
+	for _, dir := range candidates {
+		if info, err := os.Stat(filepath.Join(dir, "jieba.dict.utf8")); err == nil && !info.IsDir() {
+			return dir
+		}
+	}
+	return ""
 }
 
 // EvaluationStatue represents the status of an evaluation task
