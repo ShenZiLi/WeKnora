@@ -120,9 +120,23 @@ jobs:
         shell: bash
         run: |
           set -e
+          # The module cache may be cold on a fresh runner (notably Windows), in
+          # which case `go list -m -f {{.Dir}}` yields an empty path. Download the
+          # module first so its bundled cppjieba dictionaries are present.
+          go mod download github.com/yanyiwu/gojieba
           MODDIR="$(go list -m -f '{{.Dir}}' github.com/yanyiwu/gojieba | sed 's|\\|/|g')"
+          if [ -z "${MODDIR}" ] || [ ! -d "${MODDIR}" ]; then
+            echo "::error::could not resolve gojieba module dir (got '${MODDIR}')"
+            go env GOMODCACHE GOFLAGS GOTOOLCHAIN
+            find "$(go env GOMODCACHE)/github.com" -maxdepth 2 -iname "gojieba*" 2>/dev/null || true
+            exit 1
+          fi
           DICT_SRC="${MODDIR}/deps/cppjieba/dict"
-          test -f "${DICT_SRC}/jieba.dict.utf8"
+          if [ ! -f "${DICT_SRC}/jieba.dict.utf8" ]; then
+            echo "::error::jieba.dict.utf8 missing under ${DICT_SRC}"
+            ls -la "${MODDIR}" || true
+            exit 1
+          fi
           rm -rf desktop-dict
           mkdir -p desktop-dict
           cp "${DICT_SRC}"/*.utf8 desktop-dict/
