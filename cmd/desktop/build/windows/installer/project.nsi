@@ -95,6 +95,16 @@ Section
     File "..\..\..\..\..\THIRD_PARTY_NOTICES.md"
     SetOutPath "$INSTDIR\licenses"
     File /r "..\..\..\..\..\licenses\*"
+
+    ; WeKnora Lite runtime assets: SPA / config / sqlite migrations / env template.
+    ; internal/router/static.go serves the SPA from ./web, so these must sit next
+    ; to the installed executable.
+    SetOutPath $INSTDIR
+    File /r "..\..\..\..\..\web"
+    File /r "..\..\..\..\..\config"
+    File /oname=.env "..\..\..\..\..\.env.lite.example"
+    SetOutPath "$INSTDIR\migrations"
+    File /r "..\..\..\..\..\migrations\sqlite"
     SetOutPath $INSTDIR
 
     CreateShortcut "$SMPROGRAMS\${INFO_PRODUCTNAME}.lnk" "$INSTDIR\${PRODUCT_EXECUTABLE}"
