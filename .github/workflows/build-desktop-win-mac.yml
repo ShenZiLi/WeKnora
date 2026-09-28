@@ -116,6 +116,18 @@ jobs:
         if: runner.os == 'Windows'
         run: choco install nsis -y
 
+      - name: Stage gojieba dictionaries
+        shell: bash
+        run: |
+          set -e
+          MODDIR="$(go list -m -f '{{.Dir}}' github.com/yanyiwu/gojieba | sed 's|\\|/|g')"
+          DICT_SRC="${MODDIR}/deps/cppjieba/dict"
+          test -f "${DICT_SRC}/jieba.dict.utf8"
+          rm -rf desktop-dict
+          mkdir -p desktop-dict
+          cp "${DICT_SRC}"/*.utf8 desktop-dict/
+          ls -l desktop-dict
+
       - name: Resolve version
         id: ver
         shell: bash
@@ -185,6 +197,8 @@ jobs:
           cp -r config/* "${RESOURCES}/config/"
           rm -rf "${RESOURCES}/web"
           cp -r web "${RESOURCES}/web"
+          rm -rf "${RESOURCES}/dict"
+          cp -r desktop-dict "${RESOURCES}/dict"
 
           # ad-hoc 签名：Apple Silicon 上未签名会直接报「已损坏」
           codesign --force --deep --sign - "${SRC}" || echo "ad-hoc codesign skipped"
@@ -224,6 +238,7 @@ jobs:
           cp -r config "${PORTABLE}/config"
           mkdir -p "${PORTABLE}/migrations/sqlite"
           cp -r migrations/sqlite/* "${PORTABLE}/migrations/sqlite/"
+          cp -r desktop-dict "${PORTABLE}/dict"
 
           powershell -NoProfile -Command "Compress-Archive -Path '${PORTABLE}' -DestinationPath '${ARCHIVE}_portable.zip' -Force"
           sha256sum "${ARCHIVE}_portable.zip" > "${ARCHIVE}_portable.zip.sha256"
